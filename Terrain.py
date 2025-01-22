@@ -71,7 +71,7 @@ class MyWidget(Widget):
             self.canvas.clear()
             Rectangle(texture=self.texture, pos=(0, 0), size=(Window.width, Window.height * 0.8))
 
-        #self.Shadow_Cast(self.light_source)
+        
         
             
     """def Shadow_Cast(self, light_pos):
@@ -141,9 +141,9 @@ class MyWidget(Widget):
 
 class MyApp(App):
     def build(self):
-        layout = BoxLayout(orientation='vertical')  # Layout vertical para widgets acima
+        layout = BoxLayout(orientation='vertical')  
 
-        # Área de controle
+       
         control_panel = BoxLayout(orientation='horizontal', size_hint=(1, None), height=100)
 
         scale_label = Label(text="Scale")
@@ -163,7 +163,7 @@ class MyApp(App):
         regenerate_button = Button(text="Regenerate Terrain", size_hint=(1, 0.1))
         regenerate_button.bind(on_release=self.regenerate_terrain)
 
-        # Adiciona widgets ao painel de controle
+       
         control_panel.add_widget(scale_label)
         control_panel.add_widget(self.scale_slider)
         control_panel.add_widget(persistence_label)
@@ -176,17 +176,17 @@ class MyApp(App):
         
         layout.add_widget(control_panel)
 
-        # Instancia o widget de terreno
+        
         self.terrain_widget = MyWidget()
         layout.add_widget(self.terrain_widget)
 
-        # Fundo gradiente
+        
         with layout.canvas.before:
-            # Cor inicial do gradiente (azul)
+           
             self.gradient_color = Color(30/255, 176/255, 251/255, 1)  
             self.rect = Rectangle(size=Window.size, pos=layout.pos)
             
-            # Gradiente do fundo
+         
             self.update_gradient()
 
         Window.bind(on_resize=self.on_window_resize)
@@ -195,7 +195,7 @@ class MyApp(App):
 
     def on_window_resize(self, instance, width, height):
         self.update_gradient()
-        self.rect.size = instance.size  # Atualiza o tamanho do retângulo
+        self.rect.size = instance.size  
         self.terrain_widget.generate_noise_texture()
         
     def regenerate_terrain(self, instance):
@@ -206,12 +206,12 @@ class MyApp(App):
         self.terrain_widget.generate_noise_texture()
 
     def update_gradient(self):
-        # Atualiza o gradiente conforme a tela
+     
         gradient = Texture.create(size=(Window.width, Window.height), colorfmt='rgb')
         gradient_pixels = []
         
         for y in range(Window.height):
-            r = g = b = 30 + (y / Window.height) * (118 - 30)  # Gradiente entre azul e verde
+            r = g = b = 30 + (y / Window.height) * (118 - 30)  
             gradient_pixels.extend([int(r), int(g), int(b)] * Window.width)
         
         gradient.blit_buffer(bytes(gradient_pixels), colorfmt='rgb', bufferfmt='ubyte')
