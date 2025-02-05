@@ -32,9 +32,9 @@ class TerrainType:
 class MyWidget(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.scale = 0.007
-        self.octaves = 7
-        self.persistence = 0.5
+        self.scale = 0.005
+        self.octaves = 8
+        self.persistence = 0.6
         self.lacunarity = 2
 
         self.waterTerrain = TerrainType(-1.0, -0.15, (0, 0, 0), (40, 255, 255)) 
@@ -44,16 +44,26 @@ class MyWidget(Widget):
         self.mountainTerrain = TerrainType(0.3, 0.45, (120, 100, 60), (180, 160, 100))  
         self.snowTerrain = TerrainType(0.45, 1.0, (245, 245, 245), (255, 255, 255))  
         
+        self.zoom = 1.0  
+        self.tex_factor = 2.0  
+
+
+        self.offset_x = 0.5
+        self.offset_y = 0.5
+        self.last_touch_pos = None
+        
         self.height_map = []
         self.generate_noise_texture()
         
     def generate_noise_texture(self):
+        tex_width = int(Window.width * self.tex_factor)
+        tex_height = int(Window.height * self.tex_factor)
         pixels = []
-        self.texture = Texture.create(size=(int(Window.width), int(Window.height)), colorfmt='rgb')
+        self.texture = Texture.create(size=(tex_width, tex_height), colorfmt='rgb')
         self.height_map = []  
-        for y in range(int(Window.height)):
+        for y in range(tex_height):
             row = []
-            for x in range(int(Window.width)):
+            for x in range(tex_width):
                 noise_value = pnoise2(
                     x * self.scale,
                     y * self.scale,
@@ -70,7 +80,59 @@ class MyWidget(Widget):
 
         self.canvas.clear()
         with self.canvas:
-            Rectangle(texture=self.texture, pos=(0, 0), size=(Window.width, Window.height))
+            self.rect = Rectangle(texture=self.texture, pos=(0, 0), size=(Window.width, Window.height))
+        self.update_zoom()
+
+    def on_touch_down(self, touch):
+        if touch.is_mouse_scrolling:
+            if touch.button == 'scrolldown':
+                self.zoom = max(self.zoom * 0.9, 1.0 / self.tex_factor)
+            elif touch.button == 'scrollup':
+                self.zoom = min(self.zoom * 1.1, 10.0)
+            self.update_zoom()
+            return True
+        else:
+            self.last_touch_pos = (touch.x, touch.y)
+            return super().on_touch_down(touch)
+
+    def on_touch_move(self, touch):
+        if self.last_touch_pos is not None:
+            dx = touch.x - self.last_touch_pos[0]
+            dy = touch.y - self.last_touch_pos[1]
+            default_range_x = float(Window.width) / self.texture.width
+            default_range_y = float(Window.height) / self.texture.height
+            new_range_x = default_range_x / self.zoom
+            new_range_y = default_range_y / self.zoom
+
+            self.offset_x -= dx * (new_range_x / Window.width)
+            self.offset_y -= dy * (new_range_y / Window.height)
+            self.last_touch_pos = (touch.x, touch.y)
+            self.update_zoom()
+            return True
+        return super().on_touch_move(touch)
+
+    def on_touch_up(self, touch):
+        self.last_touch_pos = None
+        return super().on_touch_up(touch)
+
+    def update_zoom(self):
+        default_range_x = float(Window.width) / self.texture.width
+        default_range_y = float(Window.height) / self.texture.height
+        new_range_x = default_range_x / self.zoom
+        new_range_y = default_range_y / self.zoom
+
+        min_offset_x = new_range_x / 2.0
+        max_offset_x = 1.0 - new_range_x / 2.0
+        min_offset_y = new_range_y / 2.0
+        max_offset_y = 1.0 - new_range_y / 2.0
+        self.offset_x = max(min(self.offset_x, max_offset_x), min_offset_x)
+        self.offset_y = max(min(self.offset_y, max_offset_y), min_offset_y)
+
+        u_min = self.offset_x - new_range_x / 2.0
+        u_max = self.offset_x + new_range_x / 2.0
+        v_min = self.offset_y - new_range_y / 2.0
+        v_max = self.offset_y + new_range_y / 2.0
+        self.rect.tex_coords = [u_min, v_min, u_max, v_min, u_max, v_max, u_min, v_max]
 
     def get_terrain_color(self, noise_value):
         if noise_value < self.waterTerrain.maxHeight:
